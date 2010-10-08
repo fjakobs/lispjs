@@ -50,9 +50,11 @@ function $eval(ast, env) {
         for (var i=0; i<ast.length; i++) 
             var ret = $eval(ast[i], env)
         return ret;
-    } if (head.n == "define") {
+    } else if (head.n == "quote") {
+        return ast[1];
+    } else if (head.n == "define") {
         return env.set(ast[1].n, $eval(ast[2], env))
-    } if (head.n == "lambda") {
+    } else if (head.n == "lambda") {
         var args = ast.slice(1, -1)
         var func = ast[ast.length-1]
         return env.set(ast[1].n, function() { 
@@ -93,7 +95,40 @@ function eval(program) {
     return $eval(parse(tokenize(program)), newEnv())
 }
 
-//var program = "(begin (define r 3) (* 3.41  (* r r)))"
-var program = "(begin (define area (lambda r (* 3.41  (* r r)))) (area 3))"
+function isNumber(obj) {
+    return typeof obj == "number"
+}
 
-console.log(eval(program))
+function isSymbol(obj) {
+    return obj && obj.t == SYMBOL;
+}
+
+function isList(obj) {
+    return Object.prototype.toString.call(obj) == "[object Array]";
+}
+
+function stringify(ast) {
+    if (isNumber(ast))
+        return ast+""
+    else if (isSymbol(ast))
+        return ast.n
+    else if (isList(ast))
+        return "(" + ast.map(stringify).join(" ") + ")";
+    else
+        throw new Error("invalid AST");
+}
+
+var tests = {
+    "(begin (define r 3) (* 3.14  (* r r)))": (3.14 * (3 * 3)) + "",
+    "(begin (define area (lambda r (* 3.14  (* r r)))) (area 3))": (3.14 * (3 * 3)) + "",
+    "(quote a)": "a"
+}
+
+for (var program in tests) {
+    console.log("> " + program);
+    var val = stringify(eval(program));
+    console.log(val);
+    var expected = tests[program];
+    if (val != expected)
+        console.log("Assertion Error: expected " + expected);
+}
