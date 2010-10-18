@@ -45,17 +45,19 @@ function $eval(ast, env) {
     
     var head = ast[0];
     if (head.n == "begin") {
-        for (var i=0; i<ast.length; i++) 
+        for (var i=1; i<ast.length; i++) 
             var ret = $eval(ast[i], env)
         return ret;
     } else if (head.n == "quote") {
         return ast[1];
     } else if (head.n == "define") {
+        return env.define(ast[1].n, $eval(ast[2], env))
+    } else if (head.n == "set!") {
         return env.set(ast[1].n, $eval(ast[2], env))
     } else if (head.n == "lambda") {
         var args = ast.slice(1, -1)
         var func = ast[ast.length-1]
-        return env.set(ast[1].n, function() { 
+        return env.define(ast[1].n, function() { 
             var params = {}
             for (var i=0; i<args.length; i++)
                 params[args[i].n] = arguments[i]
@@ -71,26 +73,31 @@ function $eval(ast, env) {
 function newEnv(parent, values) {
     return {
         data: values || {},
-        parent: parent || {data: global},
+        parent: parent,
+        
+        find: function(key) {
+        	if (key in this.data) 
+        		return this.data;
+        	else
+        		return parent ? this.parent.find(key) : undefined;
+        },
+        
         get: function(key) {
-            var v;
-            var obj = this;
-            while(obj) {
-                var v = obj.data[key];
-                if (v !== undefined)
-                    return v;
-                obj = obj.parent;
-            }
+			return this.find(key)[key];
+        },
+        
+        define: function(key, value) {
+            return this.data[key] = value;
         },
         
         set: function(key, value) {
-            return this.data[key] = value;
-        } 
+        	this.find(key)[key] = value;
+        }
     }
 }
 
 function eval(program) {
-    return $eval(parse(tokenize(program)), newEnv())
+    return $eval(parse(tokenize(program)), newEnv(null, global))
 }
 
 function isNumber(obj) {
