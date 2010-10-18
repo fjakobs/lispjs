@@ -29,12 +29,33 @@ function parse(tokens) {
     throw new Error("Expected ')'");
 }
 
-var global = {};
-var ops = "*/+-";
-ops.split("").map(function(op) {
-    global[op] = new Function(["a", "b"], "return a" + op + "b"); 
-})
+function infix(op) {
+    return new Function(["a", "b"], "return a" + op + "b"); 
+};
 
+global = {
+	"+": infix("+"),
+	"-": infix("-"),
+	"*": infix("*"),
+	"/": infix("/"),
+	"not": function(a) { return !a },
+	">": infix(">"),
+	"<": infix("<"),
+	">=": infix(">="),
+	"<=" : infix("<="),
+	"=": infix("=="),
+	"equal?": infix("==="),
+	// "eq?": 
+	"length": function(a) { return a.length },
+	"cons": function(a, b) {b.unshift(a); return b },
+	"car": function(a) { return a[0] },
+	"cdr": function(a) { return a.slice(1) },
+	"append": function(a, b) { b.push(a); return b },
+	"list": function() { return Array.prototype.slice.call(arguments) },
+	"list?": isList,
+	"null?": function(a) { return a === null },
+	"symbol?" : isSymbol
+}
 
 function $eval(ast, env) {
     if (typeof ast == "number") {
@@ -132,7 +153,32 @@ function stringify(ast) {
 var tests = {
     "(begin (define r 3) (* 3.14  (* r r)))": (3.14 * (3 * 3)) + "",
     "(begin (define area (lambda r (* 3.14  (* r r)))) (area 3))": (3.14 * (3 * 3)) + "",
-    "(quote a)": "a"
+    "(quote a)": "a",
+    "(quote (a b c))": "(a b c)",
+    "(if (> 10 20) (+ 1 1) (+ 3 3))": "6",
+    "(begin (define x 4) (set! x 12) x)": "12",
+    "(+ 1 2)": "3",
+    "(- 1 2)": "-1",
+    "(* 2 3)": "6",
+    "(/ 6 2)": "3",
+    "(if (not (> 10 2)) 1 0)" : "0",
+    "(if (< 10 2) 1 0)" : "0",
+    "(if (>= 10 2) 1 0)" : "1",
+    "(if (<= 10 2) 1 0)" : "0",
+    "(if (= 10 2) 1 0)" : "0",
+    "(if (= 10 10) 1 0)" : "1",
+    "(length (quote (1 2 3)))": "3",
+    "(cons 1 (quote (2 3)))": "(1 2 3)",
+    "(car (quote (1 2 3)))": "1",
+    "(cdr (quote (1 2 3)))": "(2 3)",
+    "(append 3 (quote (1 2)))": "(1 2 3)", // TODO lookup
+    "(list 1)": "(1)",
+    "(list 1 2 3)": "(1 2 3)",
+    "(if (list? 10) 1 0)" : "0",
+    "(if (list? (list 10)) 1 0)" : "1",
+    //"(null? ...)": "", // TODO
+    "(if (symbol? 10) 1 0)" : "0",
+    "(if (symbol? (quote x)) 1 0)" : "1"
 }
 
 for (var program in tests) {
