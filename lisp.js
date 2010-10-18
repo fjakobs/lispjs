@@ -63,6 +63,12 @@ function $eval(ast, env) {
                 params[args[i].n] = arguments[i]
             return $eval(func, newEnv(env, params))
         });
+    } else if (head.n == "if") {
+    	var test = $eval(ast[1], env);
+    	if (test)
+    		return $eval(ast[2], env)
+    	else
+    		return ast[3] !== undefined ? $eval(ast[3], env) : false;
     } else {
         return env.get(head.n).apply(this, ast.slice(1).map(function(ast) {
             return $eval(ast, env);
