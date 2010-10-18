@@ -5,13 +5,11 @@ function tokenize(str) {
 }
 
 var SYMBOL = {}
-
 function parse(tokens) {
-    //console.log(tokens);
     var ast = [];
     var token = tokens.shift()
     if (token != "(")
-        throw new Error("Expcetect '('")
+        throw new Error("Expected '('")
         
     while(tokens.length) {
         if (tokens[0] == "(") {
